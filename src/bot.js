@@ -17,6 +17,14 @@ bot.command('start', commandHandlers.handleStart);
 
 // Административные команды
 bot.command('message', middleware.adminMiddleware, adminHandlers.handleMessage);
+// Добавляем обработчик фото с командой message
+bot.on('photo', async (ctx) => {
+    const caption = ctx.message?.caption;
+    if (caption?.startsWith('/message')) {
+        return adminHandlers.handleMessage(ctx);
+    }
+});
+
 bot.command('grant', middleware.adminMiddleware, adminHandlers.handleGrant);
 bot.command('users', middleware.adminMiddleware, adminHandlers.handleUsers);
 bot.command('revoke', middleware.adminMiddleware, adminHandlers.handleRevoke);
@@ -24,7 +32,7 @@ bot.command('revoke', middleware.adminMiddleware, adminHandlers.handleRevoke);
 // Middleware проверки доступа (после админских команд)
 bot.use(middleware.accessMiddleware);
 
-// Обычные к��манды (доступны пользователям с доступом)
+// Обычные кманды (доступны пользователям с доступом)
 bot.command('new', commandHandlers.handleNew);
 bot.hears('🔄 Новая сессия', commandHandlers.handleNew);
 bot.hears('ℹ️ Текущая модель', commandHandlers.handleCurrentModel);

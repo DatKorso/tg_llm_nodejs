@@ -3,21 +3,35 @@ const logger = require('../utils/logger');
 
 async function handleMessage(ctx) {
     try {
+        // Проверяем права администратора
+        const isAdmin = await db.isAdmin(ctx.from.id);
+        if (!isAdmin) {
+            return ctx.reply('У вас нет прав администратора для выполнения этой команды.');
+        }
+
         const userId = ctx.from.id;
         logger.info('Обработка команды /message', { userId });
         
-        // Получаем текст сообщения
-        const messageText = ctx.message.text.replace(/^\/message\s+/, '');
+        // Проверяем наличие фото в сообщении
+        const photo = ctx.message?.photo;
         
-        // Проверяем, есть ли reply на сообщение с фото
-        const replyToMessage = ctx.message.reply_to_message;
-        const photo = replyToMessage?.photo;
+        // Получаем текст сообщения из caption или обычного текста
+        let messageText = (ctx.message?.caption || ctx.message?.text || '')
+            .replace(/^\/message\s*/, '') // Убираем команду и возможные пробелы после неё
+            .trim();
+            
+        // Если после удаления команды текст пустой, обнуляем его для фото
+        if (messageText === '' && photo) {
+            messageText = undefined;
+        }
         
+        // Проверяем условия для отправки
         if (!messageText && !photo) {
             return ctx.reply(
-                'Для отправки сообщения:\n' +
-                '1. Просто текст: /message Ваше сообщение\n' +
-                '2. Текст с картинкой: ответьте на сообщение с картинкой командой /message Ваше сообщение'
+                'Для отправки рассылки используйте один из форматов:\n' +
+                '1. /message Текст сообщения\n' +
+                '2. Отправьте фото с подписью: /message Текст сообщения\n' +
+                '3. Отправьте фото с подписью /message для рассылки без текста'
             );
         }
 
@@ -38,14 +52,18 @@ async function handleMessage(ctx) {
         for (const user of users) {
             try {
                 if (photo) {
+                    // Получаем файл с наилучшим качеством (последний в массиве)
                     const bestPhoto = photo[photo.length - 1];
                     await ctx.telegram.sendPhoto(user.user_id, bestPhoto.file_id, {
-                        caption: messageText
+                        caption: messageText // undefined автоматически пропустится
                     });
                 } else {
                     await ctx.telegram.sendMessage(user.user_id, messageText);
                 }
                 successCount++;
+                
+                // Небольшая задержка между отправками
+                await new Promise(resolve => setTimeout(resolve, 100));
             } catch (error) {
                 logger.error('Ошибка отправки сообщения:', {
                     userId: user.user_id,
@@ -53,11 +71,15 @@ async function handleMessage(ctx) {
                 });
                 failCount++;
             }
-            await new Promise(resolve => setTimeout(resolve, 100));
         }
 
-        const statsMessage = `Рассылка завершена:\n✅ Успешно: ${successCount}\n❌ Ошибок: ${failCount}`;
-        await ctx.reply(statsMessage);
+        // Отправляем статистику
+        const statsMessage = 
+            '<b>📬 Рассылка завершена</b>\n\n' +
+            `✅ Успешно: <code>${successCount}</code>\n` +
+            `❌ Ошибок: <code>${failCount}</code>`;
+            
+        await ctx.reply(statsMessage, { parse_mode: 'HTML' });
 
     } catch (error) {
         logger.error('Ошибка при выполнении команды message:', error);
