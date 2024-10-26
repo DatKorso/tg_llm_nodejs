@@ -25,39 +25,156 @@
 - Winston (логирование)
 - Axios
 
-## ⚙️ Установка
+## 🚀 Деплой
+
+### 1. Подготовка сервера
+
+1. Подключитесь к вашему серверу:
+```bash
+ssh username@your_server_ip
+```
+
+2. Установите необходимые зависимости:
+```bash
+sudo apt update
+sudo apt install nodejs npm git
+```
+
+3. Установите PM2 для управления процессом:
+```bash
+sudo npm install -g pm2
+```
+
+### 2. Настройка проекта
 
 1. Клонируйте репозиторий:
-```
+```bash
 git clone https://github.com/yourusername/ai-telegram-bot.git
 cd ai-telegram-bot
 ```
+
 2. Установите зависимости:
+```bash
+npm install --production
 ```
-bash
-npm install
+
+3. Создайте и настройте файл окружения:
+```bash
+nano .env
 ```
-3. Создайте файл `.env` в корневой директории:
+
+Добавьте необходимые переменные:
 ```
 BOT_TOKEN=your_telegram_bot_token
 ADMIN_ID=your_telegram_id
-GPTunnel Configuration
+
+# GPTunnel Configuration
 GPTUNNEL_API_KEY=your_gptunnel_api_key
 GPTUNNEL_API_URL=https://api.gptunnel.com
-Mistral Configuration
+
+# Mistral Configuration
 MISTRAL_API_KEY=your_mistral_api_key
 MISTRAL_API_URL=https://api.mistral.ai
 ```
+
+### 3. Запуск бота
+
+1. Запустите бота через PM2:
+```bash
+pm2 start src/index.js --name ai-bot
+```
+
+2. Настройте автозапуск:
+```bash
+pm2 startup
+pm2 save
+```
+
+### 4. Мониторинг
+
+- Просмотр логов:
+```bash
+pm2 logs ai-bot
+```
+
+- Статус бота:
+```bash
+pm2 status
+```
+
+- Перезапуск бота:
+```bash
+pm2 restart ai-bot
+```
+
+### 5. Обновление бота
+
+1. Остановите бота:
+```bash
+pm2 stop ai-bot
+```
+
+2. Получите обновления:
+```bash
+git pull origin main
+```
+
+3. Обновите зависимости:
+```bash
+npm install --production
+```
+
 4. Запустите бота:
+```bash
+pm2 start ai-bot
 ```
-bash
-npm start
+
+### 6. Рекомендации по безопасности
+
+1. Настройте файрвол:
+```bash
+sudo ufw enable
+sudo ufw allow ssh
+sudo ufw allow http
+sudo ufw allow https
 ```
-5. Для разработки используйте:
+
+2. Настройте регулярное резервное копирование базы данных:
+```bash
+# Создайте скрипт для бэкапа
+mkdir -p ~/backups
+cp src/database/database.sqlite ~/backups/database-$(date +%Y%m%d).sqlite
 ```
-bash
-npm run dev
+
+3. Добавьте задачу в crontab:
+```bash
+crontab -e
+# Добавьте строку для ежедневного бэкапа в 00:00
+0 0 * * * cp /path/to/bot/src/database/database.sqlite ~/backups/database-$(date +%Y%m%d).sqlite
 ```
+
+### 7. Мониторинг и оповещения
+
+Настройте оповещения о статусе бота через PM2:
+```bash
+pm2 install pm2-telegram
+```
+
+Конфигурация в `ecosystem.config.js`:
+```javascript
+module.exports = {
+  apps: [{
+    name: 'ai-bot',
+    script: 'src/index.js',
+    watch: false,
+    max_memory_restart: '1G',
+    env: {
+      NODE_ENV: 'production'
+    }
+  }]
+};
+```
+
 
 ## 📝 Команды бота
 
@@ -121,3 +238,4 @@ src/
 ## 📄 Лицензия
 
 MIT License. См. файл [LICENSE](LICENSE) для деталей.
+
