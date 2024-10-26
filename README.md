@@ -34,14 +34,14 @@
 - bash
 - npm install
 3. Создайте файл `.env` в корневой директории:
-BOT_TOKEN=your_telegram_bot_token
+```BOT_TOKEN=your_telegram_bot_token
 ADMIN_ID=your_telegram_id
 GPTunnel Configuration
 GPTUNNEL_API_KEY=your_gptunnel_api_key
 GPTUNNEL_API_URL=https://api.gptunnel.com
 Mistral Configuration
 MISTRAL_API_KEY=your_mistral_api_key
-MISTRAL_API_URL=https://api.mistral.ai
+MISTRAL_API_URL=https://api.mistral.ai```
 4. Запустите бота:
 - bash
 - npm start
