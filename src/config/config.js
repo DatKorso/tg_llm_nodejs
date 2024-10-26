@@ -9,6 +9,8 @@ module.exports = {
     PROVIDERS: {
         GPTUNNEL: {
             NAME: 'GPTunnel',
+            API_KEY: process.env.GPTUNNEL_API_KEY,
+            API_URL: process.env.GPTUNNEL_API_URL || 'https://api.gptunnel.com',
             MODELS: {
                 'GPT4o-MINI': 'gpt-4o-mini',
                 'O1-MINI': 'o1-mini'
@@ -16,10 +18,12 @@ module.exports = {
         },
         MISTRAL: {
             NAME: 'Mistral',
+            API_KEY: process.env.MISTRAL_API_KEY,
+            API_URL: process.env.MISTRAL_API_URL || 'https://api.mistral.ai/v1/chat/completions',
             MODELS: {
-                'MISTRAL-TINY': 'mistral-tiny',
-                'MISTRAL-SMALL': 'mistral-small',
-                'MISTRAL-MEDIUM': 'mistral-medium'
+                'MISTRAL-SMALL': 'mistral-small-latest',
+                'MISTRAL-MEDIUM': 'mistral-medium-latest',
+                'MISTRAL-LARGE': 'mistral-large-latest'
             }
         }
     },
@@ -31,5 +35,5 @@ module.exports = {
     MAX_HISTORY_MESSAGES: 20,
 
     // Модель по умолчанию
-    DEFAULT_MODEL: 'gpt-4o-mini'
+    DEFAULT_MODEL: 'mistral-small-latest'
 };

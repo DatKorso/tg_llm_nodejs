@@ -99,7 +99,7 @@ class Database {
             console.log('Пользователь является администратором:', isAdmin);
             return isAdmin;
         } catch (error) {
-            console.error('Ошибк�� при проверке прав администратора:', error);
+            console.error('Ошибк при проверке прав админист��атора:', error);
             return false;
         }
     }
@@ -136,6 +136,13 @@ class Database {
             console.error('Ошибка при получении списка пользователей:', error);
             throw error;
         }
+    }
+
+    async getUserModel(userId) {
+        return await this.db.get(
+            'SELECT selected_model FROM users WHERE user_id = ?',
+            [userId]
+        );
     }
 }
 

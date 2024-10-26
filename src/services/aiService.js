@@ -1,5 +1,6 @@
 const axios = require('axios');
 const config = require('../config/config');
+const logger = require('../utils/logger');
 
 class AIService {
     constructor() {
@@ -9,46 +10,57 @@ class AIService {
         };
     }
 
-    // Определяем провайдера и модель из строки модели
     parseModelString(modelString) {
+        logger.info('Парсинг модели:', { modelString });
+        
         for (const [providerName, provider] of Object.entries(config.PROVIDERS)) {
-            for (const [_, model] of Object.entries(provider.MODELS)) {
+            for (const [modelKey, model] of Object.entries(provider.MODELS)) {
                 if (model === modelString) {
+                    logger.info('Найдена модель:', { provider: providerName, model });
                     return {
                         provider: providerName.toLowerCase(),
-                        model: modelString
+                        model: modelString,
+                        apiKey: provider.API_KEY,
+                        apiUrl: provider.API_URL
                     };
                 }
             }
         }
-        throw new Error('Неподдерживаемая модель');
+        throw new Error(`Неподдерживаемая модель: ${modelString}`);
     }
 
     async sendMessage(modelString, messages) {
-        const { provider, model } = this.parseModelString(modelString);
-        const requestHandler = this.providers[provider];
-        
-        if (!requestHandler) {
-            throw new Error('Провайдер не поддерживается');
-        }
+        try {
+            logger.info('Отправка сообщения:', { model: modelString, messagesCount: messages.length });
+            
+            const { provider, model, apiKey, apiUrl } = this.parseModelString(modelString);
+            const requestHandler = this.providers[provider];
+            
+            if (!requestHandler) {
+                throw new Error(`Провайдер не поддерживается: ${provider}`);
+            }
 
-        return await requestHandler(model, messages);
+            return await requestHandler(model, messages, apiKey, apiUrl);
+        } catch (error) {
+            logger.error('Ошибка при отправке сообщения:', error);
+            throw error;
+        }
     }
 
-    async createGPTunnelRequest(model, messages) {
+    async createGPTunnelRequest(model, messages, apiKey, apiUrl) {
         try {
-            // Добавляем системный промпт, если его нет в начале сообщений
+            logger.info('Отправка запроса к GPTunnel:', { model, apiUrl });
+            
             const systemPrompt = {
                 role: "system",
-                content: "assistant"
+                content: "You are a helpful assistant."
             };
 
-            // Проверяем, есть ли уже системное сообщение
             const hasSystemMessage = messages.some(msg => msg.role === 'system');
             const finalMessages = hasSystemMessage ? messages : [systemPrompt, ...messages];
 
             const response = await axios.post(
-                config.PROVIDERS.GPTUNNEL.API_URL,
+                apiUrl,
                 {
                     model,
                     messages: finalMessages,
@@ -57,66 +69,90 @@ class AIService {
                 },
                 {
                     headers: {
-                        'Authorization': config.PROVIDERS.GPTUNNEL.API_KEY,
+                        'Authorization': `Bearer ${apiKey}`,
                         'Content-Type': 'application/json'
                     }
                 }
             );
             
-            if (response.data && response.data.choices && response.data.choices[0]) {
+            logger.info('Получен ответ от GPTunnel');
+            
+            if (response.data?.choices?.[0]?.message) {
                 return response.data.choices[0].message;
             } else {
                 throw new Error('Неверный формат ответа от GPTunnel API');
             }
         } catch (error) {
-            console.error('GPTunnel API error:', error.response?.data || error.message);
-            throw new Error('Ошибка при запросе к GPTunnel API');
+            logger.error('GPTunnel API error:', {
+                error: error.response?.data || error.message,
+                status: error.response?.status
+            });
+            throw new Error(`Ошибка GPTunnel API: ${error.message}`);
         }
     }
 
-    async createMistralRequest(model, messages) {
+    async createMistralRequest(model, messages, apiKey, apiUrl) {
         try {
-            // Добавляем системный промпт, если его нет в начале сообщений
+            logger.info('Отправка запроса к Mistral:', { 
+                model, 
+                apiUrl,
+                messagesCount: messages.length 
+            });
+            
+            // Проверяем URL
+            if (!apiUrl) {
+                throw new Error('Не указан URL для Mistral API');
+            }
+
             const systemPrompt = {
                 role: "system",
-                content: "assistant"
+                content: "You are a helpful assistant."
             };
 
-            // Проверяем, есть ли уже системное сообщение
             const hasSystemMessage = messages.some(msg => msg.role === 'system');
             const finalMessages = hasSystemMessage ? messages : [systemPrompt, ...messages];
 
+            // Добавляем логирование запроса
+            logger.info('Отправляем запрос к Mistral:', {
+                url: apiUrl,
+                model,
+                messagesCount: finalMessages.length
+            });
+
             const response = await axios.post(
-                `${config.PROVIDERS.MISTRAL.API_URL}`,
+                apiUrl,
                 {
                     model,
                     messages: finalMessages,
                     temperature: 0.3,
-                    top_p: 1,
-                    max_tokens: 2048,
-                    stream: false,
-                    safe_prompt: false,
-                    response_format: {
-                        type: "text"
-                    }
+                    max_tokens: 2048
                 },
                 {
                     headers: {
-                        'Authorization': `Bearer ${config.PROVIDERS.MISTRAL.API_KEY}`,
+                        'Authorization': `Bearer ${apiKey}`,
                         'Content-Type': 'application/json',
                         'Accept': 'application/json'
                     }
                 }
             );
             
-            if (response.data && response.data.choices && response.data.choices[0]) {
+            logger.info('Получен ответ от Mistral:', {
+                status: response.status,
+                hasData: !!response.data
+            });
+            
+            if (response.data?.choices?.[0]?.message) {
                 return response.data.choices[0].message;
             } else {
                 throw new Error('Неверный формат ответа от Mistral API');
             }
         } catch (error) {
-            console.error('Mistral API error:', error.response?.data || error);
-            throw new Error('Ошибка при запросе к Mistral API');
+            logger.error('Mistral API error:', {
+                error: error.response?.data || error.message,
+                status: error.response?.status,
+                url: apiUrl
+            });
+            throw new Error(`Ошибка Mistral API: ${error.message}`);
         }
     }
 }
