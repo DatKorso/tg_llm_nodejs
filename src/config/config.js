@@ -3,24 +3,23 @@ require('dotenv').config();
 module.exports = {
     // Telegram конфигурация
     BOT_TOKEN: process.env.BOT_TOKEN,
+    ADMIN_ID: process.env.ADMIN_ID,
     
     // Конфигурация API провайдеров
     PROVIDERS: {
         GPTUNNEL: {
-            API_KEY: process.env.GPTUNNEL_API_KEY,
-            API_URL: process.env.GPTUNNEL_API_URL,
+            NAME: 'GPTunnel',
             MODELS: {
-                O1_MINI: 'o1-mini',
-                GPT4O_MINI: 'gpt-4o-mini'
+                'GPT4o-MINI': 'gpt-4o-mini',
+                'O1-MINI': 'o1-mini'
             }
         },
         MISTRAL: {
-            API_KEY: process.env.MISTRAL_API_KEY,
-            API_URL: 'https://api.mistral.ai/v1/chat/completions',
+            NAME: 'Mistral',
             MODELS: {
-                SMALL: 'mistral-small-latest',
-                MEDIUM: 'mistral-medium-latest',
-                LARGE: 'mistral-large-latest'
+                'MISTRAL-TINY': 'mistral-tiny',
+                'MISTRAL-SMALL': 'mistral-small',
+                'MISTRAL-MEDIUM': 'mistral-medium'
             }
         }
     },
