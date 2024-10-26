@@ -1,0 +1,35 @@
+# Зависимости
+node_modules/
+package-lock.json
+
+# Логи
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Директории среды выполнения
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Директория для инструментов покрытия кода
+coverage/
+
+# Кэш
+.npm
+.eslintcache
+
+# Локальные файлы конфигурации
+.env
+.env.local
+.env.*.local
+
+# Файлы редакторов
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
