@@ -16,19 +16,32 @@ export class AIMessageHandler {
             // Получаем историю сообщений
             const previousMessages = await this.messageService.getLastMessages(userId);
             
-            // Сохраняем новое сообщение пользователя
-            await this.messageService.saveMessage(userId, 'user', text);
-
             // Формируем контекст для модели
+            const messages: AIMessage[] = [];
+
+            // 1. Добавляем системный промпт (всегда первый)
             const systemPrompt = this.getSystemPrompt(modelType);
-            const messages: AIMessage[] = [
-                { role: 'system', content: systemPrompt },
-                ...previousMessages.map(msg => ({
-                    role: msg.role,
+            messages.push({
+                role: 'system',
+                content: systemPrompt
+            });
+
+            // 2. Добавляем историю диалога
+            previousMessages.forEach(msg => {
+                messages.push({
+                    role: msg.role === 'user' ? 'user' : 'assistant',
                     content: msg.content
-                })),
-                { role: 'user', content: text }
-            ];
+                });
+            });
+
+            // 3. Добавляем текущее сообщение пользователя
+            messages.push({
+                role: 'user',
+                content: text
+            });
+
+            // Сохраняем сообщение пользователя
+            await this.messageService.saveMessage(userId, 'user', text);
 
             // Получаем ответ от AI
             const aiService = AIServiceFactory.getService(modelType);
