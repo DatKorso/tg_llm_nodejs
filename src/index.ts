@@ -13,6 +13,7 @@ import { setupUserCommands } from './commands/user.commands';
 import { KeyboardService } from './services/keyboard.service';
 import { errorHandler } from './middlewares/error.handler';
 import { AccessError } from './utils/errors';
+import { ModelType, getModelName } from './config/models.config';
 
 dotenv.config();
 
@@ -21,7 +22,7 @@ const userService = new UserService();
 const messageService = new MessageService();
 const aiHandler = new AIMessageHandler();
 
-// Добавим вспомогательную функцию для отправки приветственного сообщения с клавиатурой
+// Добавим вспомогательную функцию для отправки привет��твенного сообщения с клавиатурой
 async function sendWelcomeMessage(ctx: MyContext, message: string) {
     await ctx.reply(
         message,
@@ -121,6 +122,54 @@ bot.on('text', async (ctx) => {
     } catch (error) {
         logger.error('Error processing message:', error);
         await ctx.reply('Произошла ошибка при обработке сообщения.', KeyboardService.getMainKeyboard());
+    }
+});
+
+// Добавляем обработчик для кнопки "Выбрать модель"
+bot.hears('🔧 Выбрать модель', async (ctx) => {
+    try {
+        await ctx.reply('Выберите модель:', KeyboardService.getModelSelectionKeyboard());
+    } catch (error) {
+        logger.error('Error showing model selection:', error);
+        await ctx.reply('Произошла ошибка при выборе модели.');
+    }
+});
+
+// Добавляем обработчик callback-запросов для выбора модели
+bot.action(/^model:(.+)$/, async (ctx) => {
+    try {
+        const modelType = ctx.match[1] as ModelType;
+        if (!ctx.from) return;
+
+        await userService.updatePreferredModel(ctx.from.id, modelType);
+        const modelName = getModelName(modelType);
+        
+        await ctx.answerCbQuery(`Выбрана модель: ${modelName}`);
+        await ctx.reply(`Модель успешно изменена на ${modelName}`, KeyboardService.getMainKeyboard());
+        
+        // Обновляем сессию с новой моделью
+        ctx.session.modelType = modelType;
+        
+        logger.info(`User ${ctx.from.id} changed model to ${modelType}`);
+    } catch (error) {
+        logger.error('Error changing model:', error);
+        await ctx.answerCbQuery('Произошла ошибка при выборе модели');
+    }
+});
+
+// Добавляем обработчик для кнопки "Текущая модель"
+bot.hears('ℹ️ Текущая модель', async (ctx) => {
+    try {
+        if (!ctx.from) return;
+        
+        const user = await userService.getUserById(ctx.from.id);
+        if (!user) return;
+        
+        const modelName = getModelName(user.preferredModel);
+        await ctx.reply(`Текущая модель: ${modelName}`, KeyboardService.getMainKeyboard());
+    } catch (error) {
+        logger.error('Error showing current model:', error);
+        await ctx.reply('Произошла ошибка при получении информации о текущей модели.');
     }
 });
 

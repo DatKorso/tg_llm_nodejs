@@ -16,6 +16,7 @@ export class AIServiceFactory {
 
         switch (modelType) {
             case 'gpt-4o-mini':
+            case 'gpt-4o':
             case 'o1-mini':
                 service = new GPTunnelService({
                     apiKey: process.env.GPTUNNEL_API_KEY!,

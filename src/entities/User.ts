@@ -1,5 +1,6 @@
 import { Entity, PrimaryColumn, Column, OneToMany } from 'typeorm';
 import { Message } from './Message';
+import { ModelType } from '../config/models.config';
 
 @Entity('users')
 export class User {
@@ -12,8 +13,11 @@ export class User {
     @Column({ default: 0 })
     access!: number;
 
-    @Column({ default: 'gpt-3.5-turbo', name: 'preferred_model' })
-    preferredModel!: string;
+    @Column({
+        type: 'varchar',
+        default: 'gpt-4o-mini'
+    })
+    preferredModel!: ModelType;
 
     @OneToMany(() => Message, (message: Message) => message.user)
     messages!: Message[];
