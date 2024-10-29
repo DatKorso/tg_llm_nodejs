@@ -12,7 +12,7 @@ export class UserService {
                 id,
                 username,
                 access: 0,
-                preferredModel: 'gpt-3.5-turbo'
+                preferredModel: 'gpt-4o-mini'
             });
             return await this.userRepository.save(user);
         } catch (error) {

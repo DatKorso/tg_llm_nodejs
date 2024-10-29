@@ -21,6 +21,14 @@ const userService = new UserService();
 const messageService = new MessageService();
 const aiHandler = new AIMessageHandler();
 
+// Добавим вспомогательную функцию для отправки приветственного сообщения с клавиатурой
+async function sendWelcomeMessage(ctx: MyContext, message: string) {
+    await ctx.reply(
+        message,
+        KeyboardService.getMainKeyboard()
+    );
+}
+
 // Инициализация сессии
 bot.use(session());
 
@@ -37,6 +45,7 @@ bot.use(async (ctx, next) => {
         if (!user) {
             user = await userService.createUser(ctx.from.id, ctx.from.username);
             logger.info(`New user registered: ${ctx.from.id}`);
+            await sendWelcomeMessage(ctx, 'Добро пожаловать! Для использования бота необходим доступ от администратора.');
         }
 
         if (user.access === 0 && ctx.message && 'text' in ctx.message && !ctx.message.text.startsWith('/start')) {
@@ -57,10 +66,7 @@ setupUserCommands(bot);
 bot.command('start', async (ctx) => {
     try {
         logger.info(`User ${ctx.from.id} started the bot`);
-        await ctx.reply(
-            'Добро пожаловать! Для использования бота необходим доступ от администратора.',
-            KeyboardService.getMainKeyboard()
-        );
+        await sendWelcomeMessage(ctx, 'Добро пожаловать! Для использования бота необходим доступ от администратора.');
     } catch (error) {
         logger.error('Error in start command:', error);
         await ctx.reply('Произошла ошибка при запуске бота.');
@@ -91,7 +97,7 @@ bot.on('text', async (ctx) => {
                     modelType: ctx.session?.modelType || 'gpt-4o-mini',
                     messageHistory: []
                 };
-                await ctx.reply('Сессия создана. История сообщений очищена.');
+                await sendWelcomeMessage(ctx, 'Сессия создана. История сообщений очищена.');
                 logger.info(`New session started for user ${ctx.from.id}`);
             }
             // Для всех системных команд прерываем обработку здесь
@@ -110,11 +116,11 @@ bot.on('text', async (ctx) => {
         );
 
         if (response) {
-            await ctx.reply(response);
+            await ctx.reply(response, KeyboardService.getMainKeyboard());
         }
     } catch (error) {
         logger.error('Error processing message:', error);
-        await ctx.reply('Произошла ошибка при обработке сообщения.');
+        await ctx.reply('Произошла ошибка при обработке сообщения.', KeyboardService.getMainKeyboard());
     }
 });
 
