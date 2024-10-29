@@ -1,5 +1,7 @@
 # Зависимости
 node_modules/
+source_old/
+dist/
 package-lock.json
 
 # Логи
